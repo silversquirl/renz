@@ -12,6 +12,9 @@ pub fn main() !void {
     });
     defer win.deinit();
 
+    const shad = try renz.Shader.initBytes(&win, @embedFile("shader/shader.spv"));
+    defer shad.deinit();
+
     while (!win.shouldClose()) {
         try ctx.pollEvents();
     }

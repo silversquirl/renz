@@ -20,8 +20,11 @@ pub const InstanceDispatch = vk.InstanceWrapper(.{
 
 pub const DeviceDispatch = vk.DeviceWrapper(.{
     .CreateCommandPool,
+    .CreateShaderModule,
     .CreateSwapchainKHR,
+
     .DestroyCommandPool,
-    .DestroySwapchainKHR,
     .DestroyDevice,
+    .DestroyShaderModule,
+    .DestroySwapchainKHR,
 });

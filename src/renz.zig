@@ -317,3 +317,50 @@ pub const PhysicalDevice = struct {
         return self;
     }
 };
+
+pub const Shader = struct {
+    win: *const Window,
+    shad: vk.ShaderModule,
+
+    // Creates a shader from an array of native-endian u32
+    pub fn init(win: *const Window, code: []const u32) !Shader {
+        const shad = try win.d.createShaderModule(win.dev, .{
+            .flags = .{},
+            .code_size = 4 * code.len,
+            .p_code = code.ptr,
+        }, null);
+        errdefer win.d.destroyShaderModule(win.dev, shad, null);
+
+        return Shader{ .win = win, .shad = shad };
+    }
+
+    // Creates a shader from a array of bytes
+    pub fn initBytes(win: *const Window, code: []const u8) !Shader {
+        if (code.len & 3 != 0 or code.len == 0) {
+            return error.InvalidShader;
+        }
+
+        // Detect endianness
+        const magic = std.mem.readIntSliceLittle(u32, code);
+        const spirv_magic = 0x07230203;
+        const endian: std.builtin.Endian = switch (magic) {
+            spirv_magic => .Little,
+            @byteSwap(u32, spirv_magic) => .Big,
+            else => return error.InvalidShader,
+        };
+
+        // Read SPIR-V
+        const code32 = try allocator.alloc(u32, @divExact(code.len, 4));
+        defer allocator.free(code32);
+        for (code32) |*v, i| {
+            v.* = std.mem.readIntSlice(u32, code[i * 4 ..], endian);
+        }
+
+        // Init shader
+        return init(win, code32);
+    }
+
+    pub fn deinit(self: Shader) void {
+        self.win.d.destroyShaderModule(self.win.dev, self.shad, null);
+    }
+};
